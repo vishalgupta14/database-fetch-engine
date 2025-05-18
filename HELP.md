@@ -985,9 +985,9 @@ curl -X POST http://localhost:8080/api/query/data \
   "filters": [
     {
       "column": "string_timestamp",
-      "value": "2025-05-16T23:59:59",
+      "value": "2025-05-1623:59:59",
       "castType": "TIMESTAMP",
-      "castFormat": "yyyy-MM-dd'T'HH:mm:ss",
+      "castFormat": "yyyy-MM-ddHH:mm:ss",
       "filterOperator": "EQUALS"
     }
   ]
@@ -1064,7 +1064,7 @@ curl -X POST http://localhost:8080/api/query/data \
     {
       "column": "string_json",
       "value": "{\"null\": null}",
-      "castType": "JSON",
+      "castType": "JSONB",
       "filterOperator": "EQUALS"
     }
   ]
@@ -1526,7 +1526,7 @@ curl -X POST http://localhost:8080/api/query/data \
     {
       "column": "string_json",
       "value": "{\"key\":\"value\"}",
-      "castType": "JSON",
+      "castType": "JSONB",
       "filterOperator": "EQUALS"
     }
   ]
@@ -1620,6 +1620,7 @@ INSERT INTO public.order_table (user_id, product_name, quantity, price, order_da
   (1, 'Mouse', 2, 25.50, '2024-05-11'),
   (2, 'Keyboard', 1, 45.00, '2024-05-12');
 ```
+
 
 ## ⚠️ Notes
 

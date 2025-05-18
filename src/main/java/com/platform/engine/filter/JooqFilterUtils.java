@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -142,12 +144,21 @@ public class JooqFilterUtils {
 
     @SuppressWarnings("unchecked")
     private static TypedValue inferTypedValue(Object raw, DataType<?> sqlType, String formatOverride) {
-        Object parsed;
-
         if (raw == null) {
             return new TypedValue(null, sqlType);
         }
 
+        // Handle list/collection case
+        if (raw instanceof Collection<?> rawList) {
+            List<Object> parsedList = new ArrayList<>();
+            for (Object item : rawList) {
+                TypedValue singleValue = inferTypedValue(item, sqlType, formatOverride);
+                parsedList.add(singleValue.value());
+            }
+            return new TypedValue(parsedList, sqlType);
+        }
+
+        Object parsed;
         Class<?> targetType = sqlType.getType();
 
         try {
@@ -187,8 +198,9 @@ public class JooqFilterUtils {
             );
         }
 
-        return new TypedValue(parsed, (DataType<Object>) sqlType);
+        return new TypedValue(parsed, sqlType);
     }
+
 
     private static Condition combineConditions(Condition first, Condition second, LogicalOperator logicalOperator) {
         return switch (logicalOperator) {
@@ -224,6 +236,7 @@ public class JooqFilterUtils {
             case "UUID" -> SQLDataType.UUID;
             case "JSON" -> SQLDataType.JSON;
             case "JSONB" -> SQLDataType.JSONB;
+            case "CHAR" -> SQLDataType.CHAR;
             default -> throw new IllegalArgumentException("Unsupported cast type: " + type);
         };
     }
