@@ -61,10 +61,21 @@ public class JooqFilterUtils {
     }
 
     private static Condition buildSingleCondition(Search search, Map<String, Field<?>> columnFieldMap) {
-        Field<?> originalField = columnFieldMap.get(search.getColumn());
+        Field<?> originalField;
 
-        if (originalField == null) {
-            throw new IllegalArgumentException("Unknown column: " + search.getColumn());
+        if (search.getColumn().contains(".")) {
+            String[] parts = search.getColumn().split("\\.");
+            if (parts.length != 2) throw new IllegalArgumentException("Invalid column format: " + search.getColumn());
+
+            String alias = parts[0];
+            String column = parts[1];
+
+            originalField = DSL.field(DSL.name(alias, column));
+        } else {
+            originalField = columnFieldMap.get(search.getColumn());
+            if (originalField == null) {
+                throw new IllegalArgumentException("Unknown column: " + search.getColumn());
+            }
         }
 
         DataType<Object> sqlDataType;
@@ -72,8 +83,7 @@ public class JooqFilterUtils {
 
         if (search.getCastType() != null) {
             sqlDataType = mapStringToSqlDataType(search.getCastType());
-            Field<?> rawField = DSL.field(DSL.name(search.getColumn()));
-            field = rawField.cast(sqlDataType);
+            field = DSL.field(originalField.getQualifiedName()).cast(sqlDataType);
         } else {
             field = (Field<Object>) originalField;
             sqlDataType = field.getDataType().getSQLDataType();
@@ -141,6 +151,7 @@ public class JooqFilterUtils {
             case AND, OR -> DSL.noCondition();
         };
     }
+
 
     @SuppressWarnings("unchecked")
     private static TypedValue inferTypedValue(Object raw, DataType<?> sqlType, String formatOverride) {

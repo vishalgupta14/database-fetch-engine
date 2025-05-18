@@ -27,9 +27,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -239,23 +242,35 @@ public class DatabaseFetchEngine {
                     return Flux.fromIterable(finalStep.fetch())
                             .map(record -> {
                                 Map<String, Object> map = new LinkedHashMap<>();
+                                Set<String> usedKeys = new HashSet<>();
+
                                 for (Field<?> field : record.fields()) {
-                                    String key = field.getName();
-                                    if (!map.containsKey(key)) {  // ✅ ignore duplicates
-                                        Object value = record.get(field);
+                                    String baseColumn = field.getName(); // e.g., "id"
+                                    String tableAlias = field.getQualifiedName().first(); // e.g., "user_table", "order_table"
 
-                                        // Handle JSONB
-                                        if (value instanceof org.jooq.JSONB jsonb) {
-                                            String json = jsonb.data();
-                                            try {
-                                                value = mapper.readTree(json);
-                                            } catch (Exception e) {
-                                                value = json;
-                                            }
-                                        }
+                                    String key;
 
-                                        map.put(key, value);
+                                    // If it's already used, then prefix with table alias
+                                    if (usedKeys.contains(baseColumn)) {
+                                        key = tableAlias + "_" + baseColumn;
+                                    } else {
+                                        key = baseColumn;
+                                        usedKeys.add(baseColumn);
                                     }
+
+                                    Object value = record.get(field);
+
+                                    // Handle JSONB
+                                    if (value instanceof org.jooq.JSONB jsonb) {
+                                        String json = jsonb.data();
+                                        try {
+                                            value = mapper.readTree(json);
+                                        } catch (Exception e) {
+                                            value = json;
+                                        }
+                                    }
+
+                                    map.put(key, value);
                                 }
 
                                 try {
