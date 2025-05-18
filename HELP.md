@@ -1604,6 +1604,14 @@ CREATE TABLE public.order_table (
   order_date DATE,
   FOREIGN KEY (user_id) REFERENCES public.user_table(id)
 );
+
+CREATE TABLE public.payment_table (
+  id SERIAL PRIMARY KEY,
+  order_id INT REFERENCES order_table(id),
+  amount DECIMAL(10, 2),
+  payment_method VARCHAR(50),
+  paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ### 🧪 Seed Data Insert SQL
@@ -1619,7 +1627,360 @@ INSERT INTO public.order_table (user_id, product_name, quantity, price, order_da
   (1, 'Laptop', 1, 999.99, '2024-05-10'),
   (1, 'Mouse', 2, 25.50, '2024-05-11'),
   (2, 'Keyboard', 1, 45.00, '2024-05-12');
+  
+-- 💳 Payments
+INSERT INTO payment_table (order_id, amount, payment_method) VALUES
+(1, 999.99, 'Credit Card'),
+(2, 51.00, 'UPI');
 ```
+
+## 🔗 API Join Examples
+
+All examples demonstrate how to use the `/api/query/data` endpoint with SQL-style joins using `table`, `alias`, and `joins` syntax.
+
+> ✅ All examples include a `directConfig` block for PostgreSQL.
+
+---
+
+### 1. 🔹 INNER JOIN: All users with orders
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ]
+}'
+```
+
+---
+
+### 2. 🔹 LEFT JOIN: All users with optional orders
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "LEFT",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ]
+}'
+```
+
+---
+
+### 3. 🔹 RIGHT JOIN: All orders with optional users
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "order_table",
+  "alias": "o",
+  "joins": [
+    {
+      "joinType": "RIGHT",
+      "table": "user_table",
+      "alias": "u",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ]
+}'
+```
+
+---
+
+### 4. 🔹 INNER JOIN with filter on join table
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    { "column": "o.price", "value": 500, "filterOperator": "GREATER_THAN" }
+  ]
+}'
+```
+
+---
+
+### 5. 🔹 Multiple JOINs: Orders and payment info
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    },
+    {
+      "joinType": "LEFT",
+      "table": "payment_table",
+      "alias": "p",
+      "onLeft": ["o.id"],
+      "onRight": ["p.order_id"]
+    }
+  ]
+}'
+```
+### 6. 🔹 JOIN with sorting
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "orderBy": "o.price",
+  "orderDirection": "DESC",
+  "limit": 10
+}'
+```
+
+---
+
+### 7. 🔹 JOIN with pagination (limit + offset)
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "limit": 5,
+  "offset": 10
+}'
+```
+
+---
+
+### 8. 🔹 JOIN + BETWEEN filter
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.price",
+      "value": [100, 1000],
+      "filterOperator": "BETWEEN"
+    }
+  ]
+}'
+```
+
+---
+
+### 9. 🔹 JOIN with LIKE search
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.product_name",
+      "value": "Lap",
+      "filterOperator": "LIKE"
+    }
+  ]
+}'
+```
+
+---
+
+### 10. 🔹 JOIN with multiple conditions
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    { "column": "u.name", "value": "Ali", "filterOperator": "LIKE" },
+    { "column": "o.price", "value": 50, "filterOperator": "GREATER_THAN_EQUAL" }
+  ]
+}'
+```
+
+---
 
 
 ## ⚠️ Notes
