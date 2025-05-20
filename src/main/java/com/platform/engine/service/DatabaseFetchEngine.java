@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -451,6 +452,25 @@ public class DatabaseFetchEngine {
         }
     }
 
+    public Mono<JsonNode> getTableSchema(QueryRequest request) {
+        return getDslContext(request)
+                .map(ctx -> {
+                    Table<?> table = DSL.table(DSL.name(request.getTable()));
+                    Table<?> resolvedTable = ctx.meta().getTables().stream()
+                            .filter(t -> t.getName().equalsIgnoreCase(request.getTable()))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException("Table not found: " + request.getTable()));
+
+                    ObjectMapper mapper = new ObjectMapper();
+                    ObjectNode schemaNode = mapper.createObjectNode();
+
+                    for (Field<?> field : resolvedTable.fields()) {
+                        schemaNode.put(field.getName(), field.getDataType().getTypeName());
+                    }
+
+                    return schemaNode;
+                });
+    }
 
 
 }

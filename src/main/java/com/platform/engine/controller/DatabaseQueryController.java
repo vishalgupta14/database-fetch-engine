@@ -34,5 +34,13 @@ public class DatabaseQueryController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/schema")
+    public Mono<ResponseEntity<JsonNode>> getTableSchema(@RequestBody QueryRequest request) {
+        return fetchEngine.getTableSchema(request)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+
 }
 

@@ -1,5 +1,27 @@
 # Dynamic Query Engine – Sample Playground with `test_data_all_types`
 
+🎯 Purpose of This Library
+
+In my professional journey, I've observed a recurring challenge in enterprise software development: the persistence layer often becomes bloated with repetitive, verbose, and complex boilerplate code. Developers frequently write and maintain custom query logic for even simple filter and join operations — leading to code that is not only redundant but also difficult to maintain, debug, and scale.
+
+The core objective of building this library is to simplify and streamline query logic, empowering developers to express rich filtering and joining behavior through a single, consistent, and declarative API. This significantly reduces the amount of code written in both the persistence and service layers, allowing teams to focus more on business logic rather than the intricacies of query construction.
+
+✅ Highlights:
+
+🔍 You only need a filter method to perform dynamic filtering and data retrieval.
+
+🔄 Works for both select and delete operations.
+
+🧩 Entity-agnostic: supports both JPA entity-based and raw SQL table-based querying.
+
+🧼 Eliminates verbose DAO methods — no more findByNameAndStatusAndType() nonsense.
+
+📐 Clean separation of concerns: filters live in your request model, not your DAO implementation.
+
+🧠 Built to be intuitive, composable, and easy to learn — yet powerful enough to support advanced scenarios like complex joins, nested conditions, and pagination.
+
+This library is the result of real-world pain points — crafted not for academic interest but to serve real backend engineers who want a cleaner, more expressive way to build data access logic that just works.
+
 This document showcases how to test all supported filter scenarios against a sample PostgreSQL table `test_data_all_types` using a Spring WebFlux + JOOQ-based query engine.
 
 ## 📂 Table Schema
@@ -1981,6 +2003,395 @@ curl -X POST http://localhost:8080/api/query/data \
 ```
 
 ---
+
+### 11. 🔹 JOIN with NOT IN filter
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.product_name",
+      "value": ["Mouse", "Keyboard"],
+      "filterOperator": "NOT_IN"
+    }
+  ]
+}'
+```
+
+---
+
+### 12. 🔹 JOIN with IS NULL filter
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "LEFT",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.id",
+      "value": null,
+      "filterOperator": "EQUALS"
+    }
+  ]
+}'
+```
+
+---
+
+### 13. 🔹 JOIN with NOT\_EQUALS condition
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.product_name",
+      "value": "Mouse",
+      "filterOperator": "NOT_EQUALS"
+    }
+  ]
+}'
+```
+
+---
+
+### 14. 🔹 JOIN with GREATER\_THAN on created\_at
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "u.created_at",
+      "value": "2025-01-01T00:00:00",
+      "castType": "TIMESTAMP",
+      "castFormat": "yyyy-MM-dd'T'HH:mm:ss",
+      "filterOperator": "GREATER_THAN"
+    }
+  ]
+}'
+```
+
+---
+
+### 15. 🔹 JOIN with specific quantity using EQUALS
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.quantity",
+      "value": 2,
+      "filterOperator": "EQUALS"
+    }
+  ]
+}'
+```
+
+---
+
+### 16. 🔹 JOIN and filter by date range using BETWEEN
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.order_date",
+      "value": ["2024-05-10", "2024-05-12"],
+      "castType": "DATE",
+      "castFormat": "yyyy-MM-dd",
+      "filterOperator": "BETWEEN"
+    }
+  ]
+}'
+```
+
+---
+
+### 17. 🔹 JOIN with IN filter on product\_name
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "o.product_name",
+      "value": ["Mouse", "Laptop"],
+      "filterOperator": "IN"
+    }
+  ]
+}'
+```
+
+---
+
+### 18. 🔹 JOIN with LIKE filter on user email
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "u.email",
+      "value": "@example.com",
+      "filterOperator": "LIKE"
+    }
+  ]
+}'
+```
+
+---
+
+### 19. 🔹 JOIN with exact match on payment method
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "order_table",
+  "alias": "o",
+  "joins": [
+    {
+      "joinType": "LEFT",
+      "table": "payment_table",
+      "alias": "p",
+      "onLeft": ["o.id"],
+      "onRight": ["p.order_id"]
+    }
+  ],
+  "filters": [
+    {
+      "column": "p.payment_method",
+      "value": "Credit Card",
+      "filterOperator": "EQUALS"
+    }
+  ]
+}'
+```
+
+---
+
+### 20. 🔹 JOIN with combined AND conditions on multiple joined tables
+
+```bash
+curl -X POST http://localhost:8080/api/query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "table": "user_table",
+  "alias": "u",
+  "joins": [
+    {
+      "joinType": "INNER",
+      "table": "order_table",
+      "alias": "o",
+      "onLeft": ["u.id"],
+      "onRight": ["o.user_id"]
+    },
+    {
+      "joinType": "LEFT",
+      "table": "payment_table",
+      "alias": "p",
+      "onLeft": ["o.id"],
+      "onRight": ["p.order_id"]
+    }
+  ],
+  "filters": [
+    { "column": "u.name", "value": "Alice", "filterOperator": "EQUALS" },
+    { "column": "p.payment_method", "value": "UPI", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+---
+
 
 
 ## ⚠️ Notes
