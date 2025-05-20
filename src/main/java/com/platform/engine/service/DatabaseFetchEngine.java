@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.*;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DatabaseFetchEngine {
+public class DatabaseFetchEngine implements ApplicationListener<ApplicationReadyEvent> {
 
     private static final ObjectMapper mapper = new ObjectMapper()
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
@@ -127,8 +129,8 @@ public class DatabaseFetchEngine {
     }
 
 
-    @PostConstruct
-    public void preloadContextsOnStartup() {
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) {
         log.info("✅ Starting preload of DSLContext instances from MongoDB configs...");
 
         configRepository.findAll()
@@ -384,6 +386,7 @@ public class DatabaseFetchEngine {
                     Table<?> baseTable = request.getAlias() != null
                             ? DSL.table(DSL.name(request.getTable())).as(request.getAlias())
                             : DSL.table(DSL.name(request.getTable()));
+
                     Condition condition = JooqFilterUtils.buildConditionFromSearchList(request.getFilters(), getCachedSchema(request));
 
                     // Always add validation to avoid accidental DELETE without WHERE
@@ -391,11 +394,14 @@ public class DatabaseFetchEngine {
                         throw new IllegalArgumentException("❌ Deletion without filter is not allowed.");
                     }
 
-                    return (long) ctx.deleteFrom(baseTable)
+                    int deletedCount = ctx.deleteFrom(baseTable)
                             .where(condition)
                             .execute();
+
+                    return Long.valueOf(deletedCount);
                 });
     }
+
 
     public Map<String, Field<?>> getCachedSchema(QueryRequest request) {
         String cacheKey = request.getConfigId() + ":" + request.getTable();

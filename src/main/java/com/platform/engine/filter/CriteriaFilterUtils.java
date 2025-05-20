@@ -1,14 +1,14 @@
 package com.platform.engine.filter;
 
 import com.platform.engine.dto.Search;
-import com.platform.engine.enums.FilterOperator;
+import com.platform.engine.enums.DataFilterOperator;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import org.jooq.Field;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,8 +16,6 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-import static com.platform.engine.enums.DataFilterOperator.*;
 
 public class CriteriaFilterUtils {
 
@@ -43,7 +41,7 @@ public class CriteriaFilterUtils {
                     : path.getJavaType();
             Object value = convertValue(search.getValue(), targetType);
 
-            FilterOperator operator = search.getFilterOperator();
+            DataFilterOperator operator = search.getFilterOperator();
             switch (operator) {
                 case EQUALS -> {
                     if (value instanceof LocalDateTime dt) {
