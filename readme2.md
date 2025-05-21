@@ -1,32 +1,12 @@
-### 🔄 JOIN Query Examples (via `/api/entity-query/data`)
+## 🔗 Entity JOIN Query Examples (via `/api/entity-query/data`)
 
-Assuming entity classes:
+Assume the following entity classes:
 
-```java
-package com.platform.engine.model;
+* `com.platform.engine.model.UserTable`
+* `com.platform.engine.model.OrderTable`
+* `com.platform.engine.model.PaymentTable`
 
-@Entity
-@Table(name = "user_table", schema = "public")
-public class UserTable { ... }
-
-@Entity
-@Table(name = "order_table", schema = "public")
-public class OrderTable { ... }
-
-@Entity
-@Table(name = "payment_table", schema = "public")
-public class PaymentTable { ... }
-```
-
-Use full class paths like:
-
-```json
-"table": "com.platform.engine.model.UserTable"
-```
-
----
-
-### 1️⃣ Fetch All Orders with User Info (INNER JOIN)
+### 1. INNER JOIN: Orders with User info
 
 ```bash
 curl -X POST http://localhost:8080/api/entity-query/data \
@@ -43,20 +23,22 @@ curl -X POST http://localhost:8080/api/entity-query/data \
     "database": "postgres"
   },
   "joins": [
-    { "table": "user", "joinType": "INNER" }
-  ],
-  "selectFields": ["productName", "user.name", "user.email"]
+    {
+      "table": "user",
+      "joinType": "INNER"
+    }
+  ]
 }'
 ```
 
-### 2️⃣ Get Payments with Order & User Info (LEFT JOIN)
+### 2. LEFT JOIN: Orders with optional Payments
 
 ```bash
 curl -X POST http://localhost:8080/api/entity-query/data \
 -H "Content-Type: application/json" \
 -H "Accept: application/x-ndjson" \
 -d '{
-  "table": "com.platform.engine.model.Payment",
+  "table": "com.platform.engine.model.OrderTable",
   "directConfig": {
     "dbType": "POSTGRES",
     "host": "localhost",
@@ -66,21 +48,23 @@ curl -X POST http://localhost:8080/api/entity-query/data \
     "database": "postgres"
   },
   "joins": [
-    { "table": "order", "joinType": "LEFT" },
-    { "table": "order.user", "joinType": "LEFT" }
+    {
+      "table": "paymentTable",
+      "joinType": "LEFT"
+    }
   ],
-  "selectFields": ["amount", "order.productName", "order.user.name", "order.user.email"]
+  "selectFields": ["productName", "paymentTable.paymentMethod", "paymentTable.amount"]
 }'
 ```
 
-### 3️⃣ Filter Orders by User Name
+### 3. JOIN with filters on joined table
 
 ```bash
 curl -X POST http://localhost:8080/api/entity-query/data \
 -H "Content-Type: application/json" \
 -H "Accept: application/x-ndjson" \
 -d '{
-  "table": "com.platform.engine.model.Order",
+  "table": "com.platform.engine.model.OrderTable",
   "directConfig": {
     "dbType": "POSTGRES",
     "host": "localhost",
@@ -90,23 +74,30 @@ curl -X POST http://localhost:8080/api/entity-query/data \
     "database": "postgres"
   },
   "joins": [
-    { "table": "user", "joinType": "INNER" }
+    {
+      "table": "userTable",
+      "joinType": "INNER"
+    }
   ],
   "filters": [
-    { "column": "user.name", "value": "Alice", "filterOperator": "EQUALS" }
+    {
+      "column": "userTable.name",
+      "value": "Alice",
+      "filterOperator": "EQUALS"
+    }
   ],
-  "selectFields": ["productName", "user.email"]
+  "selectFields": ["productName", "userTable.name"]
 }'
 ```
 
-### 4️⃣ Filter Payments > 500 AND User Email contains `example`
+### 4. Multiple JOINs: Orders + Users + Payments
 
 ```bash
 curl -X POST http://localhost:8080/api/entity-query/data \
 -H "Content-Type: application/json" \
 -H "Accept: application/x-ndjson" \
 -d '{
-  "table": "com.platform.engine.model.Payment",
+  "table": "com.platform.engine.model.OrderTable",
   "directConfig": {
     "dbType": "POSTGRES",
     "host": "localhost",
@@ -116,15 +107,73 @@ curl -X POST http://localhost:8080/api/entity-query/data \
     "database": "postgres"
   },
   "joins": [
-    { "table": "order", "joinType": "INNER" },
-    { "table": "order.user", "joinType": "INNER" }
+    {
+      "table": "userTable",
+      "joinType": "INNER"
+    },
+    {
+      "table": "paymentTable",
+      "joinType": "LEFT"
+    }
   ],
-  "filters": [
-    { "column": "amount", "value": 500, "filterOperator": "GREATER_THAN" },
-    { "column": "order.user.email", "value": "example", "filterOperator": "LIKE" }
-  ],
-  "selectFields": ["order.user.name", "amount", "order.productName"]
+  "selectFields": ["productName", "userTable.email", "paymentTable.amount"]
 }'
 ```
 
-Let me know if you'd like COUNT or DELETE variants too. ✅
+### 5. Filter on multiple joins
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.OrderTable",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "joins": [
+    {
+      "table": "userTable",
+      "joinType": "INNER"
+    },
+    {
+      "table": "paymentTable",
+      "joinType": "LEFT"
+    }
+  ],
+  "filters": [
+    {"column": "userTable.name", "value": "Bob", "filterOperator": "EQUALS"},
+    {"column": "paymentTable.amount", "value": 50, "filterOperator": "GREATER_THAN"}
+  ],
+  "selectFields": ["userTable.name", "productName", "paymentTable.amount"]
+}'
+```
+
+### 6. Nested JOIN: Payments → Order → User
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.PaymentTable",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "joins": [
+    { "table": "orderTable", "joinType": "LEFT" },
+    { "table": "orderTable.userTable", "joinType": "LEFT" }
+  ],
+  "selectFields": ["amount", "orderTable.productName", "orderTable.userTable.name", "orderTable.userTable.email"]
+}'
+```
