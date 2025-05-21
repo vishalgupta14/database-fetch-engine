@@ -3,6 +3,7 @@ package com.platform.engine.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.platform.engine.dto.DirectDatabaseConfig;
@@ -13,6 +14,8 @@ import com.platform.engine.filter.CriteriaFilterUtils;
 import com.platform.engine.model.DatabaseConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.TupleElement;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
@@ -46,57 +49,82 @@ public class JavaEntityQueryEngine {
     public Flux<JsonNode> fetchData(QueryRequest request) {
         return Flux.defer(() -> {
             try {
-                validateConnection(request);
-
                 Class<?> entityClass = Class.forName(request.getTable());
-                @SuppressWarnings("unchecked")
-                CriteriaQuery<Object> cq = (CriteriaQuery<Object>) entityManager.getCriteriaBuilder().createQuery(entityClass);
-                Root<Object> root = cq.from((Class<Object>) entityClass);
-
                 CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-                Map<String, Join<?, ?>> joins = applyJoins(cb, root, request.getJoins());
-                Map<String, Field> columnFieldMap = Arrays.stream(entityClass.getDeclaredFields())
-                        .collect(Collectors.toMap(Field::getName, f -> f));
-
-                Predicate predicate = CriteriaFilterUtils.buildCombinedPredicate(cb, root, joins, request.getFilters(), columnFieldMap);
-                if (predicate != null) cq.where(predicate);
 
                 if (request.getSelectFields() != null && !request.getSelectFields().isEmpty()) {
+                    // Case 1: Partial select using Tuple
+                    CriteriaQuery<Tuple> cq = cb.createTupleQuery();
+                    Root<?> root = cq.from(entityClass);
+
+                    Map<String, Join<?, ?>> joins = applyJoins(cb, root, request.getJoins());
+
                     List<Selection<?>> selections = request.getSelectFields().stream()
-                            .map(f -> f.contains(".") ? joins.get(f.split("\\.")[0]).get(f.split("\\.")[1]) : root.get(f))
+                            .map(f -> f.contains(".")
+                                    ? joins.get(f.split("\\.")[0]).get(f.split("\\.")[1]).alias(f)
+                                    : root.get(f).alias(f))
                             .collect(Collectors.toList());
                     cq.multiselect(selections);
-                } else {
-                    cq.select(root);
-                }
 
-                if (request.getOrderBy() != null) {
-                    Path<?> orderPath = request.getOrderBy().contains(".")
-                            ? joins.get(request.getOrderBy().split("\\.")[0]).get(request.getOrderBy().split("\\.")[1])
-                            : root.get(request.getOrderBy());
-                    cq.orderBy("DESC".equalsIgnoreCase(String.valueOf(request.getOrderDirection())) ? cb.desc(orderPath) : cb.asc(orderPath));
-                }
+                    Map<String, Field> columnFieldMap = Arrays.stream(entityClass.getDeclaredFields())
+                            .collect(Collectors.toMap(Field::getName, f -> f));
 
-                TypedQuery<Object> query = entityManager.createQuery(cq);
-                if (request.getOffset() != null) query.setFirstResult(request.getOffset());
-                if (request.getLimit() != null) query.setMaxResults(request.getLimit());
+                    Predicate predicate = CriteriaFilterUtils.buildCombinedPredicate(cb, root, joins, request.getFilters(), columnFieldMap);
+                    if (predicate != null) cq.where(predicate);
 
-                List<?> resultList = query.getResultList();
-                ObjectWriter writer = request.isPretty() ? mapper.writerWithDefaultPrettyPrinter() : mapper.writer();
-
-                return Flux.fromIterable(resultList).map(entity -> {
-                    try {
-                        return mapper.readTree(writer.writeValueAsString(entity));
-                    } catch (Exception e) {
-                        return mapper.convertValue(entity, JsonNode.class);
+                    if (request.getOrderBy() != null) {
+                        Path<?> orderPath = request.getOrderBy().contains(".")
+                                ? joins.get(request.getOrderBy().split("\\.")[0]).get(request.getOrderBy().split("\\.")[1])
+                                : root.get(request.getOrderBy());
+                        cq.orderBy("DESC".equalsIgnoreCase(String.valueOf(request.getOrderDirection())) ? cb.desc(orderPath) : cb.asc(orderPath));
                     }
-                });
+
+                    TypedQuery<Tuple> query = entityManager.createQuery(cq);
+                    if (request.getOffset() != null) query.setFirstResult(request.getOffset());
+                    if (request.getLimit() != null) query.setMaxResults(request.getLimit());
+
+                    List<Tuple> tuples = query.getResultList();
+                    return Flux.fromIterable(tuples).map(tuple -> {
+                        ObjectNode node = mapper.createObjectNode();
+                        for (TupleElement<?> el : tuple.getElements()) {
+                            node.putPOJO(el.getAlias(), tuple.get(el.getAlias()));
+                        }
+                        return node;
+                    });
+
+                } else {
+                    // Case 2: Full entity
+                    CriteriaQuery<Object> cq = (CriteriaQuery<Object>) cb.createQuery(entityClass);
+                    Root<Object> root = cq.from((Class<Object>) entityClass);
+
+                    Map<String, Join<?, ?>> joins = applyJoins(cb, root, request.getJoins());
+                    Map<String, Field> columnFieldMap = Arrays.stream(entityClass.getDeclaredFields())
+                            .collect(Collectors.toMap(Field::getName, f -> f));
+                    Predicate predicate = CriteriaFilterUtils.buildCombinedPredicate(cb, root, joins, request.getFilters(), columnFieldMap);
+                    if (predicate != null) cq.where(predicate);
+
+                    if (request.getOrderBy() != null) {
+                        Path<?> orderPath = request.getOrderBy().contains(".")
+                                ? joins.get(request.getOrderBy().split("\\.")[0]).get(request.getOrderBy().split("\\.")[1])
+                                : root.get(request.getOrderBy());
+                        cq.orderBy("DESC".equalsIgnoreCase(String.valueOf(request.getOrderDirection())) ? cb.desc(orderPath) : cb.asc(orderPath));
+                    }
+
+                    cq.select(root);
+                    TypedQuery<Object> query = entityManager.createQuery(cq);
+                    if (request.getOffset() != null) query.setFirstResult(request.getOffset());
+                    if (request.getLimit() != null) query.setMaxResults(request.getLimit());
+
+                    List<Object> results = query.getResultList();
+                    return Flux.fromIterable(results).map(entity -> mapper.convertValue(entity, JsonNode.class));
+                }
 
             } catch (Exception e) {
                 return Flux.error(e);
             }
         });
     }
+
 
     public List<EntityMetadata> getMetadata(QueryRequest request) {
         validateConnection(request);

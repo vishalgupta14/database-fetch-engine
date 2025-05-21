@@ -2392,6 +2392,702 @@ curl -X POST http://localhost:8080/api/query/data \
 
 ---
 
+## 🔍 Java Entity Query API Examples (via `/api/entity-query/data`)
+
+These examples assume your entity class is:
+
+```java
+package com.platform.engine.model;
+
+@Entity
+@Table(name = "test_data_all_types", schema = "public")
+public class TestDataAllTypes { ... }
+```
+
+Use this fully qualified class name in your requests:
+
+```json
+"table": "com.platform.engine.model.TestDataAllTypes"
+```
+
+### 1. `decimalCol = 123.45`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "decimalCol", "value": 123.45, "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 2. `boolCol = true`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "boolCol", "value": true, "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 3. `dateCol = '2024-01-01'`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "dateCol", "value": "2024-01-01", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 4. `timeCol = '14:00:00'`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "timeCol", "value": "14:00:00", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 5. `timestampCol = '2024-01-01T14:00:00'`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "timestampCol", "value": "2024-01-01T14:00:00", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 6. `charCol = 'A         '` (padded CHAR)
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "charCol", "value": "A         ", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 7. `varcharCol = 'sample text'`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "varcharCol", "value": "sample text", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 8. `textCol = 'hello world'`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "textCol", "value": "hello world", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 9. `uuidCol = 'a8098c1a-f86e-11da-bd1a-00112444be1e'`
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "uuidCol", "value": "a8098c1a-f86e-11da-bd1a-00112444be1e", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+
+### 11. Greater than filter: intCol > 40
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "intCol",
+      "value": 40,
+      "filterOperator": "GREATER_THAN"
+    }
+  ]
+}'
+```
+
+### 12. Less than filter: bigintCol < 1234567890
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "bigintCol",
+      "value": 1234567890,
+      "filterOperator": "LESS_THAN"
+    }
+  ]
+}'
+```
+
+### 13. LIKE filter: textCol LIKE '%test%'
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "textCol",
+      "value": "test",
+      "filterOperator": "LIKE"
+    }
+  ]
+}'
+```
+
+### 14. IN filter: intCol IN \[42, 100]
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "intCol",
+      "value": [42, 100],
+      "filterOperator": "IN"
+    }
+  ]
+}'
+```
+
+### 15. NOT IN filter: intCol NOT IN \[-1, 0]
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "intCol",
+      "value": [-1, 0],
+      "filterOperator": "NOT_IN"
+    }
+  ]
+}'
+```
+
+### 16. BETWEEN filter: decimalCol BETWEEN 0.0 and 500.0
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "decimalCol",
+      "value": [0.0, 500.0],
+      "filterOperator": "BETWEEN"
+    }
+  ],
+}'
+```
+
+### 17. Projection only (selectFields)
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "selectFields": ["intCol", "decimalCol"],
+  "limit": 10
+}'
+```
+
+### 18. Offset and limit pagination
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "limit": 5,
+  "offset": 5,
+  "orderBy": "id",
+  "orderDirection": "ASC"
+}'
+```
+
+### 19. Logical operator: OR between filters
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "intCol",
+      "value": 42,
+      "filterOperator": "EQUALS",
+      "logicalOperator": "OR"
+    },
+    {
+      "column": "intCol",
+      "value": 100,
+      "filterOperator": "EQUALS"
+    }
+  ]
+}'
+```
+
+### 20. Boolean false match
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "boolCol",
+      "value": false,
+      "filterOperator": "EQUALS"
+    }
+  ]
+}'
+```
+### 21. Match string fields: stringBoolean = 'true'
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "stringBoolean", "value": "true", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 22. Match by UUID string column
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "stringUuid", "value": "123e4567-e89b-12d3-a456-426614174000", "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 23. Match using projection with multiple fields
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "selectFields": ["id", "boolCol", "decimalCol"],
+  "limit": 10
+}'
+```
+
+### 24. BETWEEN with timestampCol
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "timestampCol",
+      "value": ["2024-01-01T00:00:00", "2024-01-31T23:59:59"],
+      "filterOperator": "BETWEEN"
+    }
+  ]
+}'
+```
+
+### 25. Multiple filters with AND logic
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    { "column": "intCol", "value": 10, "filterOperator": "GREATER_THAN", "logicalOperator": "AND" },
+    { "column": "boolCol", "value": true, "filterOperator": "EQUALS" }
+  ]
+}'
+```
+
+### 26. Filter + selectFields combination
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "decimalCol",
+      "value": 123.45,
+      "filterOperator": "EQUALS"
+    }
+  ],
+  "selectFields": ["id", "decimalCol", "textCol"]
+}'
+```
+
+### 27. Filter on date and return selected columns
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "dateCol",
+      "value": "2024-01-01",
+      "filterOperator": "EQUALS"
+    }
+  ],
+  "selectFields": ["id", "dateCol", "textCol"]
+}'
+```
+
+### 28. Boolean filter with selected projection
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "boolCol",
+      "value": true,
+      "filterOperator": "EQUALS"
+    }
+  ],
+  "selectFields": ["id", "boolCol", "varcharCol"]
+}'
+```
+
+### 29. LIKE + Projection combo
+
+```bash
+curl -X POST http://localhost:8080/api/entity-query/data \
+-H "Content-Type: application/json" \
+-H "Accept: application/x-ndjson" \
+-d '{
+  "table": "com.platform.engine.model.TestDataAllTypes",
+  "directConfig": {
+    "dbType": "POSTGRES",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres"
+  },
+  "filters": [
+    {
+      "column": "textCol",
+      "value": "data",
+      "filterOperator": "LIKE"
+    }
+  ],
+  "selectFields": ["id", "textCol"]
+}'
+```
+
 
 
 ## ⚠️ Notes
