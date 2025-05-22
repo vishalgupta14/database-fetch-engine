@@ -2,7 +2,7 @@ package com.platform.engine.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -116,7 +116,8 @@ public class JavaEntityQueryEngine {
                     if (request.getLimit() != null) query.setMaxResults(request.getLimit());
 
                     List<Object> results = query.getResultList();
-                    return Flux.fromIterable(results).map(entity -> mapper.convertValue(entity, JsonNode.class));
+                    return Flux.fromIterable(results)
+                            .map(this::buildSafeJson);
                 }
 
             } catch (Exception e) {
@@ -124,6 +125,63 @@ public class JavaEntityQueryEngine {
             }
         });
     }
+
+    private JsonNode buildSafeJson(Object entity) {
+        return buildSafeJson(entity, new IdentityHashMap<>());
+    }
+
+    private JsonNode buildSafeJson(Object entity, Map<Object, Boolean> visited) {
+        ObjectNode node = mapper.createObjectNode();
+        if (entity == null) return node;
+
+        if (visited.containsKey(entity)) {
+            node.put("ref", "already_serialized");
+            return node;
+        }
+        visited.put(entity, true);
+
+        for (Field field : entity.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(entity);
+                if (value == null) {
+                    node.putNull(field.getName());
+                } else if (isPrimitiveOrWrapper(value.getClass())) {
+                    node.putPOJO(field.getName(), value);
+                } else if (value instanceof Collection<?> col) {
+                    ArrayNode array = mapper.createArrayNode();
+                    for (Object item : col) {
+                        array.add(buildSafeJson(item, visited));
+                    }
+                    node.set(field.getName(), array);
+                } else if (value.getClass().getName().startsWith("java.lang.reflect") ||
+                        value.getClass().getName().startsWith("sun.reflect") ||
+                        value instanceof Class<?> ||
+                        value instanceof java.lang.reflect.AnnotatedType) {
+                    continue; // skip non-serializable
+                } else {
+                    node.set(field.getName(), buildSafeJson(value, visited));
+                }
+            } catch (Exception ex) {
+                node.put(field.getName(), "error: " + ex.getClass().getSimpleName());
+            }
+        }
+        return node;
+    }
+
+
+    private boolean isPrimitiveOrWrapper(Class<?> clazz) {
+        return clazz.isPrimitive() ||
+                clazz == String.class ||
+                Number.class.isAssignableFrom(clazz) ||
+                Boolean.class.isAssignableFrom(clazz) ||
+                Character.class.isAssignableFrom(clazz) ||
+                java.util.Date.class.isAssignableFrom(clazz) ||
+                java.time.temporal.Temporal.class.isAssignableFrom(clazz) ||
+                java.util.UUID.class.isAssignableFrom(clazz);
+    }
+
+
 
 
     public List<EntityMetadata> getMetadata(QueryRequest request) {
