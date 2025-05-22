@@ -116,8 +116,8 @@ public class JavaEntityQueryEngine {
                     if (request.getLimit() != null) query.setMaxResults(request.getLimit());
 
                     List<Object> results = query.getResultList();
-                    return Flux.fromIterable(results)
-                            .map(this::buildSafeJson);
+                    return Flux.fromIterable(results).map(this::buildSafeJson);
+
                 }
 
             } catch (Exception e) {
